@@ -301,3 +301,10 @@ Details: [`docs/SECURITY.md`](docs/SECURITY.md) (live) · [`docs/SECURITY_AUDIT.
 - CI / branch protection: [`docs/CI.md`](docs/CI.md)  
 - Semver: [`docs/SEMVER.md`](docs/SEMVER.md)  
 - Changelog: [`CHANGELOG.md`](CHANGELOG.md)  
+
+
+## License
+
+Copyright © 2026 Zero State LLC. All Rights Reserved. Licensed under the Zero State Proprietary License v1.0. See [`LICENSE`](LICENSE).
+
+Third-party components remain subject to their respective licenses.
