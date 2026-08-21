@@ -2,10 +2,11 @@
 name: orchestra
 description: Map software onto fail-closed symbolic correspondence maps.
 version: 0.8.1
-author: Daniel Meyer (scrimshawlife-ctrl), Hermes Agent
+author: "Daniel Meyer (@scrimshawlife-ctrl) / Zero State LLC"
 license: Apache-2.0
 platforms: [linux, macos]
 metadata:
+  author: "Daniel Meyer (@scrimshawlife-ctrl) / Zero State LLC"
   openclaw:
     requires:
       bins: [python3]
