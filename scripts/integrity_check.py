@@ -34,12 +34,94 @@ MUST_CONTAIN: dict[str, list[str]] = {
     "scripts/orchestra.py": ["def main", "analyze", "optimize", "CHECK OK"],
     "scripts/optimize_apply.py": ["def apply_optimize_plan", "safe_apply", "--confirm"],
     "install.sh": ["validate_target", "allow-outside-home", "dry-run"],
-    "SKILL.md": ["name: orchestra", "analyze", "optimize"],
+    "SKILL.md": [
+        "name: orchestra",
+        "analyze",
+        "optimize",
+        "wizard",
+        "HERMES_SKILL_DIR",
+    ],
 }
+
+# Hermes Agent v0.21.0 (tag v2026.8.31) SKILL.md hardline.
+# Quotes around a YAML scalar do not count toward the 60-char budget.
+SKILL_DESC_MAX = 60
+SKILL_REQUIRED_KEYS = (
+    "name",
+    "description",
+    "version",
+    "author",
+    "license",
+    "platforms",
+)
+SKILL_HERMES_KEYS = ("tags", "related_skills")
 
 
 def skill_root() -> Path:
     return Path(__file__).resolve().parents[1]
+
+
+def _frontmatter_block(text: str) -> tuple[str | None, list[str]]:
+    """Return the YAML frontmatter body, or errors if the fence is missing."""
+    errors: list[str] = []
+    if not text.startswith("---"):
+        errors.append("SKILL.md: frontmatter must start at byte 0 with ---")
+        return None, errors
+    if text.startswith("---\n"):
+        rest = text[4:]
+    elif text.startswith("---\r\n"):
+        rest = text[5:]
+    else:
+        errors.append("SKILL.md: opening --- must be followed by a newline")
+        return None, errors
+    close = re.search(r"^---\s*$", rest, flags=re.M)
+    if not close:
+        errors.append("SKILL.md: missing closing frontmatter ---")
+        return None, errors
+    return rest[: close.start()], errors
+
+
+def _yaml_scalar(raw: str) -> str:
+    raw = raw.strip()
+    if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in {'"', "'"}:
+        return raw[1:-1]
+    return raw
+
+
+def check_skill_frontmatter(text: str) -> list[str]:
+    """Hermes v0.21 hardline: required keys and description ≤60."""
+    block, errors = _frontmatter_block(text)
+    if block is None:
+        return errors
+
+    for key in SKILL_REQUIRED_KEYS:
+        if not re.search(rf"^{re.escape(key)}\s*:", block, flags=re.M):
+            errors.append(f"SKILL.md: missing required frontmatter key {key!r}")
+
+    desc_m = re.search(r"^description:\s*(.*)$", block, flags=re.M)
+    if desc_m:
+        desc = _yaml_scalar(desc_m.group(1))
+        if not desc:
+            errors.append("SKILL.md: description is empty")
+        else:
+            if len(desc) > SKILL_DESC_MAX:
+                errors.append(
+                    f"SKILL.md: description is {len(desc)} chars "
+                    f"(max {SKILL_DESC_MAX} for Hermes v0.21 index)"
+                )
+            if not desc.endswith("."):
+                errors.append("SKILL.md: description must end with a period")
+
+    if not re.search(r"^metadata\s*:", block, flags=re.M):
+        errors.append("SKILL.md: missing metadata mapping")
+    if not re.search(r"^\s+hermes\s*:", block, flags=re.M):
+        errors.append("SKILL.md: missing metadata.hermes")
+    else:
+        for key in SKILL_HERMES_KEYS:
+            if not re.search(rf"^\s+{re.escape(key)}\s*:", block, flags=re.M):
+                errors.append(f"SKILL.md: missing metadata.hermes.{key}")
+
+    return errors
 
 
 def check_integrity(root: Path | None = None) -> list[str]:
@@ -80,6 +162,15 @@ def check_integrity(root: Path | None = None) -> list[str]:
         for needle in needles:
             if needle not in text:
                 errors.append(f"{rel}: missing required marker {needle!r}")
+
+    skill_md = root / "SKILL.md"
+    if skill_md.is_file():
+        try:
+            skill_text = skill_md.read_text(encoding="utf-8")
+        except OSError as exc:
+            errors.append(f"unreadable SKILL.md: {exc}")
+        else:
+            errors.extend(check_skill_frontmatter(skill_text))
 
     # orchestra.py VERSION constant should match VERSION file when present
     orch = root / "scripts" / "orchestra.py"

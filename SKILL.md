@@ -1,8 +1,10 @@
 ---
 name: orchestra
-description: "Structure code, modules, pipelines, and agent systems using traditional esoteric correspondence maps (Tree of Life, alchemy, runes, planetary spheres, I Ching, Solomonic ranks, Peircean signs, Numogram, sacred geometry, Enochian, Chaos Magic). Use when the user wants dual-named architecture skeletons, symbolic hierarchy for software, fail-closed mapping, automatic Mermaid/HTML/JSON diagrams, repo analyze→map→optimize plans, guided wizard plans, or Hermes/OpenClaw skill-style packaging for Abraxas Orchestra. Route work through meta (check/list/wizard), emit (structure/project/diagram), or repo (analyze/optimize) — same groups as the CLI CommandRouter. Prefer wizard when unsure or collecting fields in Desktop chat."
-version: 0.8.0
+description: Map software onto fail-closed symbolic correspondence maps.
+version: 0.8.1
+author: Daniel Meyer (scrimshawlife-ctrl), Hermes Agent
 license: Apache-2.0
+platforms: [linux, macos]
 metadata:
   openclaw:
     requires:
@@ -12,188 +14,112 @@ metadata:
   hermes:
     command_router: true
     groups: [meta, emit, repo]
+    tags: [architecture, correspondence, mapping, fail-closed]
+    related_skills: []
 ---
 
 # Abraxas Orchestra
 
-Hermes + OpenClaw **coding-agent skill** for symbolic code architecture.
+Orchestra maps software onto fail-closed symbolic correspondence maps from `schemas/frameworks.v1.json`. It emits dual-named skeletons and diagrams, and it observes existing trees before any gated rename.
 
-Hosts: **Hermes**, **OpenClaw**. Same contract, different install roots.
+It does not invent loci, apply writes without `--confirm`, or use network I/O on emit or repo paths. Hosts: Hermes and OpenClaw.
 
-CLI routing: `scripts/orchestra_router.py` — **meta** · **emit** · **repo**.  
-Hermes agents must pick a group first, then a command inside it (do not invent freehand Mermaid or loci).
+## When to Use
 
-Entry (after install):
+Load this skill when the user wants to:
 
-```bash
-python3 ~/.hermes/skills/orchestra/scripts/orchestra.py <command> ...
-# or from skill root:
-python3 scripts/orchestra.py <command> ...
-```
+- Scaffold a dual-named layout from a framework listed in `schemas/frameworks.v1.json`
+- Emit `architecture.html`, `architecture.json`, and `architecture.mmd` from loci or an observed graph
+- Analyze a local tree, map modules fail-closed, and plan or apply mechanical moves
+- Collect a guided wizard plan instead of freestyle flags
 
----
+Do not use this skill to invent symbolic names, write freehand Mermaid for Orchestra-mapped code, or treat FORCED or WEAK maps as success.
 
-## Hermes routing (required)
+## Prerequisites
 
-When this skill activates, **route the user request** into exactly one primary group:
+- Python 3.11 or newer, with `python3` on `PATH`
+- Local install: `bash install.sh` writes `~/.hermes/skills/orchestra`. OpenClaw: `bash install.sh --target ~/.openclaw/skills/orchestra`
+- Canonical loci only from `schemas/frameworks.v1.json`. Fit notes: `docs/FRAMEWORK_FIT.md`. Agent posture: `references/agent-posture.md`
+- No API keys. The CLI is local stdlib Python. Install and smoke scripts are bash, so this skill declares `platforms: [linux, macos]` (OpenClaw `os` stays `darwin` / `linux`)
 
-| Group | When to use | Commands |
-|-------|-------------|----------|
-| **meta** | Integrity, discovery, “what maps exist?”, guided path | `check`, `list`, `wizard` |
-| **emit** | Greenfield / skeleton / diagrams from a framework | `structure`, `project`, `diagram` |
-| **repo** | Existing codebase observe → map → plan → gated moves | `analyze`, `optimize` |
-| Guided path / unsure / Desktop chat collect | **meta** | `wizard` |
+## How to Run
 
-Rules:
-
-1. Prefer **one group per turn** unless the user clearly needs a sequence (e.g. emit then repo).
-2. Inside a group, pick the smallest command that satisfies the ask.
-3. Never invent symbolic loci — only `schemas/frameworks.v1.json`.
-4. Prefer CLI emission over freehand architecture diagrams.
-5. When unsure which flags/command, prefer **meta** `wizard` over freestyle argv.
-
-### Decision tree
+Call the CLI through the Hermes `terminal` tool. Use `${HERMES_SKILL_DIR}` from the skill activation message.
 
 ```text
-Need to verify install / list maps?
-  → meta: check | list
-
-Unsure of path / collecting fields in Desktop chat?
-  → meta: wizard  (chat → --answers; print-only default)
-
-Building new dual-named layout or diagram from a framework?
-  → emit:
-      structure  — full skeleton + auto-diagrams on --out
-      project    — same, with pragmatic collapse of oversized maps
-      diagram    — graph only (HTML/JSON/Mermaid)
-
-Reading or reshaping an existing tree?
-  → repo:
-      analyze   — OBSERVED graph; optional -f map (fail-closed)
-      optimize  — plan from analysis.json; --apply --confirm to write
+terminal(command="python3 ${HERMES_SKILL_DIR}/scripts/orchestra.py <command> ...")
 ```
 
----
+Pick one primary CommandRouter group before you choose a command:
 
-## Wizard (Hermes + Desktop)
+- **meta** — `check`, `list`, `wizard` (integrity, discovery, guided path)
+- **emit** — `structure`, `project`, `diagram` (greenfield skeleton or graph)
+- **repo** — `analyze`, `optimize` (observe, map, plan, gated apply)
 
-When the operator is unsure or you would otherwise freestyle flags:
+When the path or flags are unclear, or you are collecting fields in Desktop chat, use **meta** `wizard`. Do not invent argv.
 
-1. Collect missing fields **in chat** (one at a time). Do **not** use interactive stdin.
-2. Write `orchestra-wizard-answers.v1` JSON to a temp file.
-3. `python3 scripts/orchestra.py wizard --answers FILE --print-only` (or `--json`).
-4. On approval: `wizard --answers FILE --run` or run the printed argv.
-5. Never set `confirm_apply: true` unless the user explicitly approved gated renames.
-
-```bash
-python3 scripts/orchestra.py wizard --preset greenfield --answers answers.json --print-only
-python3 scripts/orchestra.py wizard --answers answers.json --run
-```
-
----
-
-## Commands by group
-
-### meta
+## Quick Reference
 
 ```text
-python3 scripts/orchestra.py check
-python3 scripts/orchestra.py list
-python3 scripts/orchestra.py wizard [--answers FILE] [--preset NAME] [--print-only|--run] [--json]
+python3 ${HERMES_SKILL_DIR}/scripts/orchestra.py check
+python3 ${HERMES_SKILL_DIR}/scripts/orchestra.py list
+python3 ${HERMES_SKILL_DIR}/scripts/orchestra.py wizard [--answers FILE] [--preset NAME] [--print-only|--run] [--json]
+python3 ${HERMES_SKILL_DIR}/scripts/orchestra.py structure -f <framework> [-c concerns] [-o overlay] [--out DIR]
+python3 ${HERMES_SKILL_DIR}/scripts/orchestra.py project   -f <framework> [-c concerns] [-o overlay] [--out DIR]
+python3 ${HERMES_SKILL_DIR}/scripts/orchestra.py diagram   -f <framework> [-c concerns] [-o overlay] [--out DIR] [--project]
+python3 ${HERMES_SKILL_DIR}/scripts/orchestra.py analyze  --path DIR [-f FRAMEWORK] [-o OVERLAY] [--lang python|auto|…] [--out DIR]
+python3 ${HERMES_SKILL_DIR}/scripts/orchestra.py optimize --from analysis.json [--out DIR] [--min-strength ADEQUATE]
+python3 ${HERMES_SKILL_DIR}/scripts/orchestra.py optimize --from analysis.json --apply
+python3 ${HERMES_SKILL_DIR}/scripts/orchestra.py optimize --from analysis.json --apply --confirm [--backup-dir DIR] [--refresh] [--steps IDS] [--actions NAMES]
 ```
 
-- **check** — skill integrity (schemas, version parity surface).
-- **list** — frameworks available (alias: `list-frameworks`).
-- **wizard** — guided plan from answers/preset; print-only by default; `--run` dispatches in-process. Desktop: chat collect → `--answers` (no interactive stdin).
-
-### emit
-
-```text
-python3 scripts/orchestra.py structure -f <framework> [-c concerns] [-o overlay] [--out DIR]
-python3 scripts/orchestra.py project   -f <framework> [-c concerns] [-o overlay] [--out DIR]
-python3 scripts/orchestra.py diagram   -f <framework> [-c concerns] [-o overlay] [--out DIR] [--project]
-```
-
-- **structure** — dual-named skeleton + correspondence table; stage stubs carry **ALLOWED** / **FORBIDDEN** locus contracts (`run()` + `contract()`); multi-stage `--out` also writes `pipeline.py`; auto-writes diagrams.
-- **project** — like structure, but collapses oversized / forced maps (explicit projection).
-- **diagram** — graph only (`diagrammit` alias); optional `--project` projection.
-
-Shared flags: `-f` framework (required), `-c` concerns, `-o` overlay, `--out` directory.
-
-### repo
-
-```text
-python3 scripts/orchestra.py analyze  --path DIR [-f FRAMEWORK] [-o OVERLAY] [--lang python|auto|…] [--out DIR]
-python3 scripts/orchestra.py optimize --from analysis.json [--out DIR] [--min-strength ADEQUATE]
-python3 scripts/orchestra.py optimize --from analysis.json --apply
-python3 scripts/orchestra.py optimize --from analysis.json --apply --confirm [--backup-dir DIR] [--refresh] [--steps IDS] [--actions NAMES]
-```
-
-#### analyze → map → optimize
-
-1. **`analyze --path DIR`** — read-only OBSERVED import graph.  
-   - `--lang python` (default) full AST; `javascript` / `typescript` / `go` / `rust` / `ruby` / `auto` for multi-lang.  
-   - Always embeds **`metrics`** (map quality, import cycles, responsibility mix); stderr prints `# metrics: …`.  
-   - Writes `analysis.json` + `structure-metrics.json` + diagram trio when `--out` is set.
-2. **`-f FRAMEWORK`** — fail-closed mappings (`STRONG` / `ADEQUATE` / `WEAK` / `FORCED`). Exit `1` if WEAK/FORCED; `2` on NOT_COMPUTABLE.
-3. **`optimize --from analysis.json`** — plan only by default (no tree writes).
-4. **`--apply`** — dry-run of `safe_apply` (rename / promote / flatten); **`--apply --confirm`** writes after backup. FORCED blocks apply.
-5. **`--steps` / `--actions`** — selective apply; **`--refresh`** re-analyzes after confirmed apply.
-
-Do not invent symbolic loci. Do not silently “improve” FORCED/WEAK maps.
-
----
-
-## Automatic diagrammatic emission (emit + repo)
-
-Whenever this skill emits architecture **or** the operator needs a diagram:
-
-1. Prefer **emit** `structure` / `project` with `--out DIR` — diagrams write automatically:
-   - `architecture.html` — interactive  
-   - `architecture.json` — agent graph (`orchestra-diagram.v1`)  
-   - `architecture.mmd` — Mermaid  
-2. Or **emit** `diagram` for graph-only.
-3. **repo** `analyze --out` emits the same trio from the observed graph.
-4. Do **not** invent ad-hoc Mermaid when Orchestra can emit from loci or analysis.
-
-Agents: if you would write a Mermaid block for Orchestra-mapped code, run emission first and use `architecture.mmd`.
-
----
-
-## Mandatory sequence (Hermes)
-
-1. **Route** to meta / emit / repo (table above). Prefer **meta** `wizard` when flags/path are unclear.
-2. Identify functional concerns — or **repo** `analyze` an existing tree.
-3. Choose primary framework (and optional overlay); **meta** `list` if unsure.
-4. Prefer **emit** with `--out` (auto-diagram) or **repo** analyze/optimize.
-5. Emit correspondence table JSON matching schema; diagrams auto-write on `--out`.
-6. **Implement domain logic inside each stage’s locus contract** — do not stop at empty scaffolds.
-   The map optimizes responsibilities and call direction (see `examples/python-tree-of-life-pipeline/`).
-7. Stop on `NOT_COMPUTABLE` or label `FORCED` — do not invent loci.
-
----
-
-## Frameworks
-
-Canonical loci: `schemas/frameworks.v1.json`
+Shared emit flags: `-f` framework (required), `-c` concerns, `-o` overlay, `--out` directory.
 
 Eleven maps: tree-of-life, alchemical-stages, elder-futhark, planetary-spheres, iching-hexagrams, solomonic, peircean-signs, numogram, sacred-geometry, enochian, chaos-magic.
 
-Fit guide: `docs/FRAMEWORK_FIT.md` · Agent posture: `references/agent-posture.md`
+## Procedure
 
----
+Hermes routing is required. Prefer one group per turn unless the user clearly needs a sequence (for example emit, then repo). Inside a group, pick the smallest command that satisfies the ask. Never invent symbolic loci outside `schemas/frameworks.v1.json`. Prefer CLI emission over freehand architecture diagrams.
 
-## Install (Hermes)
+1. **Route.** Need verify or list maps → **meta** `check` or `list`. Unsure or collecting fields → **meta** `wizard`. New dual-named layout or diagram → **emit** (`structure`, `project`, or `diagram`). Existing tree → **repo** (`analyze`, then `optimize`). Done when one group and one command are chosen.
 
-```bash
-bash install.sh --dry-run && bash install.sh
-# → ~/.hermes/skills/orchestra
+2. **Wizard when unsure.** Collect missing fields in chat, one at a time. Do not use interactive stdin. Write `orchestra-wizard-answers.v1` JSON to a temp file. Run `wizard --answers FILE --print-only` (or `--json`). After approval, `wizard --answers FILE --run` or run the printed argv. Never set `confirm_apply: true` unless the user explicitly approved gated renames. Done when the printed plan matches the ask.
+
+3. **Identify concerns or observe.** For greenfield, name functional concerns. For an existing tree, run **repo** `analyze --path DIR`. Optional `-f FRAMEWORK` maps fail-closed (`STRONG` / `ADEQUATE` / `WEAK` / `FORCED`). Exit `1` if WEAK or FORCED; `2` on `NOT_COMPUTABLE`. `--lang python` (default) is full AST; `javascript`, `typescript`, `go`, `rust`, `ruby`, and `auto` cover import-surface graphs. Analyze always embeds `metrics`; stderr prints `# metrics:`. `--out` writes `analysis.json`, `structure-metrics.json`, and the diagram trio. Done when you have concerns or an `analysis.json`.
+
+4. **Choose a framework.** Use **meta** `list` if unsure. Optional overlay with `-o`. Done when the framework key exists in `schemas/frameworks.v1.json`.
+
+5. **Emit or plan.** Prefer **emit** `structure` or `project` with `--out DIR` so diagrams write automatically (`architecture.html`, `architecture.json`, `architecture.mmd`). `project` collapses oversized or forced maps with an explicit projection. Use **emit** `diagram` for graph-only. Stage stubs from `structure` carry ALLOWED / FORBIDDEN locus contracts (`run()` + `contract()`); multi-stage `--out` also writes `pipeline.py`. For an existing tree, **repo** `optimize --from analysis.json` is plan-only by default. `--apply` is a dry-run of `safe_apply` (rename / promote / flatten). `--apply --confirm` writes after backup. FORCED blocks apply. `--steps` / `--actions` select moves; `--refresh` re-analyzes after confirmed apply. Done when artifacts exist under `--out` or the plan is printed.
+
+6. **Implement inside locus contracts.** After `structure` / `project`, implement domain logic in each stage. Do not stop at empty scaffolds. See `examples/python-tree-of-life-pipeline/`. Done when each stage only does its locus work and call direction follows the map.
+
+7. **Stop on fail-closed outcomes.** `NOT_COMPUTABLE` or `FORCED` means stop. Do not invent loci. Do not silently “improve” FORCED or WEAK maps. Done when the label is reported and no invented names were added.
+
+## Pitfalls
+
+- Inventing a locus that is not in `schemas/frameworks.v1.json` breaks the fail-closed contract.
+- Setting `confirm_apply: true` without explicit operator approval can write renames. Leave it unset or false.
+- Freehand Mermaid for Orchestra-mapped code drifts from the map. Run emission and use `architecture.mmd`.
+- Desktop chat cannot use interactive stdin. Collect wizard fields in chat and pass `--answers`.
+- `--apply` without `--confirm` does not write. That is the dry-run. Do not treat it as a failed apply.
+- WEAK or FORCED analyze exits `1`. That is a mapping failure, not a CLI crash.
+- Analyze language limits: Python is AST; javascript, typescript, go, rust, and ruby are import-surface parsers.
+- Windows is not a declared platform. Install and smoke are bash; the Python CLI is stdlib but untested on Windows.
+
+## Verification
+
+Prove the skill loaded and the chosen command worked:
+
+1. `terminal(command="python3 ${HERMES_SKILL_DIR}/scripts/orchestra.py check")` prints `CHECK OK`.
+2. `terminal(command="python3 ${HERMES_SKILL_DIR}/scripts/integrity_check.py")` prints `INTEGRITY OK`.
+3. After **emit** `structure`, stdout includes `"status": "CLEAN"` and `--out` contains the diagram trio when `--out` was set.
+4. After **repo** `analyze --out`, `analysis.json` exists and stderr includes `# metrics:`.
+5. After **repo** `optimize` without `--confirm`, the tree is unchanged and a plan is printed or written.
+
+Operator install (not the agent loop):
+
+```text
+terminal(command="bash ${HERMES_SKILL_DIR}/install.sh --dry-run")
 ```
 
-OpenClaw: `bash install.sh --target ~/.openclaw/skills/orchestra`
-
----
-
-## Security
-
-Local stdlib CLI. No network I/O in emit/repo structure/analyze/optimize paths. Analyze writes only under `--out`. Optimize apply requires `--confirm` and backs up before rename/promote/flatten.
+Then `bash install.sh` to `~/.hermes/skills/orchestra`.

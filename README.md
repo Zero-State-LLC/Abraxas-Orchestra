@@ -10,7 +10,7 @@
   <strong>Hermes + OpenClaw coding-agent skill</strong> for structuring software with traditional symbolic maps
 </p>
 
-Version **0.8.0** · Skill name: `orchestra` · Python ≥ 3.11 · Offline CLI · License: [Apache-2.0](LICENSE)
+Version **0.8.1** · Skill name: `orchestra` · Python ≥ 3.11 · Offline CLI · License: [Apache-2.0](LICENSE)
 
 ---
 
@@ -188,7 +188,7 @@ Publish freeze: [`docs/COMPLETION.md`](docs/COMPLETION.md) · Public debut: [`do
 
 ## Release notes
 
-**Current: 0.8.0** — Hermes wizard (`meta` guided plans via `--answers` / `--preset`; Desktop chat protocol) (see `CHANGELOG.md`). Prior: [0.7.0](docs/RELEASE_BODY_v0.7.0.md) contracts + metrics; [0.6.0](docs/RELEASE_BODY_v0.6.0.md) multi-lang parsers; [0.4.0](docs/RELEASE_NOTES.md#040--2026-08-05) broader `safe_apply`.
+**Current: 0.8.1** — Hermes v0.21.0 skill-index contract (`SKILL.md` ≤60-char description, author, platforms, tags). Prior: [0.8.0](CHANGELOG.md) wizard; [0.7.0](docs/RELEASE_BODY_v0.7.0.md) contracts + metrics; [0.6.0](docs/RELEASE_BODY_v0.6.0.md) multi-lang parsers; [0.4.0](docs/RELEASE_NOTES.md#040--2026-08-05) broader `safe_apply`.
 
 | Theme | What landed |
 |-------|-------------|

@@ -2,6 +2,15 @@
 
 Narrative notes for operators and agents. Machine changelog: [`CHANGELOG.md`](../CHANGELOG.md).
 
+## 0.8.1 — 2026-09-01
+
+Hermes Agent v0.21.0 (Pantheon, tag v2026.8.31) skill-index contract.
+
+- Description is one sentence, 59 characters: map software onto fail-closed symbolic correspondence maps.
+- Required frontmatter: `author`, `platforms: [linux, macos]`, `metadata.hermes.tags`, `metadata.hermes.related_skills: []`
+- Routing groups are unchanged: **meta** / **emit** / **repo**. Wizard when unsure. No invented loci. Gated apply stays gated.
+- Integrity check now fails a description over 60 characters
+
 ## 0.7.0 — 2026-08-07
 
 Structure as optimization — contracts, metrics, and a measurable proof path.
