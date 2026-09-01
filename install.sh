@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Abraxas Orchestra — atomic installer (v0.8.0)
+# Abraxas Orchestra — atomic installer (v0.8.1)
 # Default: ~/.hermes/skills/orchestra
 # Supports --dry-run, --rollback, --target DIR, --allow-outside-home
 
 set -euo pipefail
 
-VERSION="0.8.0"
+VERSION="0.8.1"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEFAULT_TARGET="${HOME}/.hermes/skills/orchestra"
 BACKUP_ROOT="${HOME}/.hermes/receipts/orchestra-backups"

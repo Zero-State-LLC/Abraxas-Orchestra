@@ -8,6 +8,17 @@ Narrative release notes: [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md).
 
 ## [Unreleased]
 
+## [0.8.1] — 2026-09-01
+
+### Changed
+- `SKILL.md` meets Hermes Agent v0.21.0 (tag v2026.8.31) hardline: one-sentence description ≤60 characters, `author`, `platforms`, `metadata.hermes.tags`, and `metadata.hermes.related_skills`
+- Skill body uses the Hermes section order (When to Use through Verification). CLI examples use `${HERMES_SKILL_DIR}` and the Hermes `terminal` tool
+- Integrity check asserts frontmatter starts at byte 0 and description length ≤60
+
+### Unchanged
+- CommandRouter groups remain **meta** / **emit** / **repo**. Prefer wizard when unsure. Loci stay fail-closed to `schemas/frameworks.v1.json`
+- Frontmatter `license` stays Apache-2.0. Existing OpenClaw metadata, `command_router`, and `groups` are kept. No blueprint or cron. Never set `confirm_apply: true`
+
 ## [0.8.0] — 2026-08-08
 
 ### Added

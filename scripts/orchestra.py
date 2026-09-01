@@ -33,7 +33,7 @@ from orchestra_wizard import (
     validate_answers,
 )
 
-VERSION = "0.8.0"
+VERSION = "0.8.1"
 SKILL_ROOT = Path(__file__).resolve().parent.parent
 
 def _load_frameworks() -> dict[str, dict[str, Any]]:

@@ -8,10 +8,10 @@ Checklist for listing **orchestra** in agent skill hubs (OpenClaw, Hermes Skills
 |-------------|--------|-------|
 | Folder contains `SKILL.md` | Pass | Root entry |
 | YAML frontmatter `name` | Pass | `orchestra` (lowercase, hyphens) |
-| YAML frontmatter `description` | Pass | What + when-to-use (routing text) |
+| YAML frontmatter `description` | Pass | One sentence, ≤60 chars (Hermes v0.21 hardline) |
 | `name` matches install directory | Pass | `…/skills/orchestra` |
 | Optional `scripts/`, `references/` | Pass | Progressive disclosure |
-| Description ≤ 1024 chars | Pass | Keep one line for discovery UIs when possible |
+| Description ≤ 60 chars | Pass | Hermes v0.21 index; validator ceiling remains 1024 |
 | SKILL body not a full manual | Pass | Deep tables stay in `references/` |
 
 ## OpenClaw / Hermes packaging
