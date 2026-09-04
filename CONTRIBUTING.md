@@ -2,6 +2,10 @@
 
 Private skill package. External PRs are not solicited by default.
 
+Coding agents: follow [`AGENTS.md`](AGENTS.md). Other adapters (`CLAUDE.md`)
+point there and add no extra authority. Non-trivial product changes start from
+[`intent/README.md`](intent/README.md).
+
 ## Versioning
 
 See [`docs/SEMVER.md`](docs/SEMVER.md). Single source of truth: `VERSION`.

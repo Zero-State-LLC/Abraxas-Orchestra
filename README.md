@@ -219,6 +219,9 @@ Human-readable tables: `references/`. Agent posture when filling stubs: `referen
 ## Layout
 
 ```text
+AGENTS.md                # Multi-agent SDLC contract
+CLAUDE.md                # Thin adapter → AGENTS.md
+intent/                  # SDLC intent README + _TEMPLATE.md
 SKILL.md                 # Agent contract + triggers
 scripts/orchestra.py       # CLI entry
 scripts/orchestra_router.py # Command registration + dispatch
@@ -249,7 +252,9 @@ LICENSE / NOTICE           # Apache-2.0
 | `VERSION` | Single version number for the package |
 | `CHANGELOG.md` | Machine-oriented version history |
 | `docs/SECURITY.md` | Live threat model and write surfaces |
-| `SKILL.md` | Agent contract + current commands |
+| `AGENTS.md` | Multi-agent SDLC contract (adapters point here) |
+| `CLAUDE.md` | Thin adapter → `AGENTS.md` |
+| `SKILL.md` | Hermes / OpenClaw skill contract + current commands |
 | `README.md` | Humans + agents (this file) |
 | `docs/DESIGN.md` | Current design rationale / executable surface |
 | `docs/SEMVER.md` | Version bump policy |
@@ -259,6 +264,7 @@ LICENSE / NOTICE           # Apache-2.0
 
 | Doc | Audience |
 |-----|----------|
+| `intent/README.md` | SDLC intent records for non-trivial product changes |
 | `docs/CI.md` | Actions + **branch protection** (required `ci-ok`, no admin bypass) |
 | `docs/FRAMEWORK_FIT.md` | Which map to use; strength labels |
 | `scripts/coverage_report.py` | Soft report + `--gate` hard floors |
