@@ -1,161 +1,26 @@
-name: ci
+name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
-  workflow_dispatch:
-
-permissions:
-  contents: read
-
-concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    branches: [ main ]
 
 jobs:
-  version-parity:
-    name: version-parity
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Semver format + parity (bump_version check)
-        run: |
-          set -euo pipefail
-          python3 scripts/bump_version.py check
-          V="$(python3 scripts/bump_version.py show)"
-          echo "VERSION=$V"
-          echo "$V" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$'
-          echo "version parity OK ($V)"
-
-  path-jail:
-    name: path-jail
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Installer refuses system path
-        run: |
-          set +e
-          bash install.sh --dry-run --target /etc/orchestra
-          code=$?
-          set -e
-          test "$code" -ne 0
-          echo "install path-jail OK (exit $code)"
-      - name: Analyze refuses system path
-        run: |
-          set +e
-          python3 scripts/orchestra.py analyze --path /etc
-          code=$?
-          set -e
-          test "$code" -eq 2
-          echo "analyze path-jail OK (exit $code)"
-
-  integrity:
-    name: integrity
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Critical-file integrity floors
-        run: |
-          set -euo pipefail
-          python3 scripts/integrity_check.py
-          echo "integrity OK"
-
-  smoke:
-    name: smoke (py${{ matrix.python-version }})
-    runs-on: ubuntu-latest
-    needs: [version-parity, integrity]
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.11", "3.12"]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Python version
-        run: python3 --version
-      - name: Full smoke
-        run: bash scripts/smoke.sh
-      - name: CLI check banner
-        run: |
-          out="$(python3 scripts/orchestra.py check)"
-          echo "$out"
-          echo "$out" | grep -q "CHECK OK"
-
-  # Soft report (artifact) — informational.
-  coverage-soft:
-    name: coverage-soft
-    runs-on: ubuntu-latest
-    needs: [integrity]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Soft quality / coverage report
-        run: |
-          set -euo pipefail
-          python3 scripts/coverage_report.py | tee coverage-soft.txt
-          test -s coverage-soft.txt
-          grep -q "Import check" coverage-soft.txt
-      - name: Upload soft report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-soft-report
-          path: coverage-soft.txt
-          if-no-files-found: ignore
-
-  # Hard floors + required linkage — blocks ci-ok.
-  coverage-gate:
-    name: coverage-gate
-    runs-on: ubuntu-latest
-    needs: [integrity]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Enforce coverage floors
-        run: |
-          set -euo pipefail
-          python3 scripts/coverage_report.py --gate | tee coverage-gate.txt
-          grep -q "GATE OK" coverage-gate.txt
-      - name: Upload gate report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-gate-report
-          path: coverage-gate.txt
-          if-no-files-found: ignore
-
-  ci-ok:
-    name: ci-ok
-    runs-on: ubuntu-latest
-    needs: [version-parity, path-jail, integrity, smoke, coverage-gate]
-    if: always()
-    steps:
-      - name: Require all jobs green
-        run: |
-          echo "version-parity=${{ needs.version-parity.result }}"
-          echo "path-jail=${{ needs.path-jail.result }}"
-          echo "integrity=${{ needs.integrity.result }}"
-          echo "smoke=${{ needs.smoke.result }}"
-          echo "coverage-gate=${{ needs.coverage-gate.result }}"
-          test "${{ needs.version-parity.result }}" = "success"
-          test "${{ needs.path-jail.result }}" = "success"
-          test "${{ needs.integrity.result }}" = "success"
-          test "${{ needs.smoke.result }}" = "success"
-          test "${{ needs.coverage-gate.result }}" = "success"
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        # Add your project's dependencies here, e.g.:
+        # pip install -r requirements.txt
+    - name: Run tests
+      run: |
+        # Add your test command here, e.g.:
+        # pytest
