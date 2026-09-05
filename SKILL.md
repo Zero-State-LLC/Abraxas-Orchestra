@@ -38,16 +38,18 @@ Do not use this skill to invent symbolic names, write freehand Mermaid for Orche
 ## Prerequisites
 
 - Python 3.11 or newer, with `python3` on `PATH`
-- Local install: `bash install.sh` writes `~/.hermes/skills/orchestra`. OpenClaw: `bash install.sh --target ~/.openclaw/skills/orchestra`
+- Local install: `bash install.sh` writes `${HERMES_HOME:-$HOME/.hermes}/skills/orchestra`. OpenClaw: `bash install.sh --target ~/.openclaw/skills/orchestra`
 - Canonical loci only from `schemas/frameworks.v1.json`. Fit notes: `docs/FRAMEWORK_FIT.md`. Agent posture: `references/agent-posture.md`
 - No API keys. The CLI is local stdlib Python. Install and smoke scripts are bash, so this skill declares `platforms: [linux, macos]` (OpenClaw `os` stays `darwin` / `linux`)
 
 ## How to Run
 
-Call the CLI through the Hermes `terminal` tool. Use `${HERMES_SKILL_DIR}` from the skill activation message.
+Call the CLI through the Hermes `terminal` tool. Read `skill_dir` returned by `skill_view(name="orchestra")`. Explicitly set
+`HERMES_SKILL_DIR` to that exact reviewed path in each shell invocation (or
+substitute the absolute path); Hermes does not promise an exported variable.
 
 ```text
-terminal(command="python3 ${HERMES_SKILL_DIR}/scripts/orchestra.py <command> ...")
+terminal(command='python3 "${HERMES_SKILL_DIR}/scripts/orchestra.py" <command> ...')
 ```
 
 Pick one primary CommandRouter group before you choose a command:
@@ -61,16 +63,16 @@ When the path or flags are unclear, or you are collecting fields in Desktop chat
 ## Quick Reference
 
 ```text
-python3 ${HERMES_SKILL_DIR}/scripts/orchestra.py check
-python3 ${HERMES_SKILL_DIR}/scripts/orchestra.py list
-python3 ${HERMES_SKILL_DIR}/scripts/orchestra.py wizard [--answers FILE] [--preset NAME] [--print-only|--run] [--json]
-python3 ${HERMES_SKILL_DIR}/scripts/orchestra.py structure -f <framework> [-c concerns] [-o overlay] [--out DIR]
-python3 ${HERMES_SKILL_DIR}/scripts/orchestra.py project   -f <framework> [-c concerns] [-o overlay] [--out DIR]
-python3 ${HERMES_SKILL_DIR}/scripts/orchestra.py diagram   -f <framework> [-c concerns] [-o overlay] [--out DIR] [--project]
-python3 ${HERMES_SKILL_DIR}/scripts/orchestra.py analyze  --path DIR [-f FRAMEWORK] [-o OVERLAY] [--lang python|auto|…] [--out DIR]
-python3 ${HERMES_SKILL_DIR}/scripts/orchestra.py optimize --from analysis.json [--out DIR] [--min-strength ADEQUATE]
-python3 ${HERMES_SKILL_DIR}/scripts/orchestra.py optimize --from analysis.json --apply
-python3 ${HERMES_SKILL_DIR}/scripts/orchestra.py optimize --from analysis.json --apply --confirm [--backup-dir DIR] [--refresh] [--steps IDS] [--actions NAMES]
+python3 "${HERMES_SKILL_DIR}/scripts/orchestra.py" check
+python3 "${HERMES_SKILL_DIR}/scripts/orchestra.py" list
+python3 "${HERMES_SKILL_DIR}/scripts/orchestra.py" wizard [--answers FILE] [--preset NAME] [--print-only|--run] [--json]
+python3 "${HERMES_SKILL_DIR}/scripts/orchestra.py" structure -f <framework> [-c concerns] [-o overlay] [--out DIR]
+python3 "${HERMES_SKILL_DIR}/scripts/orchestra.py" project   -f <framework> [-c concerns] [-o overlay] [--out DIR]
+python3 "${HERMES_SKILL_DIR}/scripts/orchestra.py" diagram   -f <framework> [-c concerns] [-o overlay] [--out DIR] [--project]
+python3 "${HERMES_SKILL_DIR}/scripts/orchestra.py" analyze  --path DIR [-f FRAMEWORK] [-o OVERLAY] [--lang python|auto|…] [--out DIR]
+python3 "${HERMES_SKILL_DIR}/scripts/orchestra.py" optimize --from analysis.json [--out DIR] [--min-strength ADEQUATE]
+python3 "${HERMES_SKILL_DIR}/scripts/orchestra.py" optimize --from analysis.json --apply
+python3 "${HERMES_SKILL_DIR}/scripts/orchestra.py" optimize --from analysis.json --apply --confirm [--backup-dir DIR] [--refresh] [--steps IDS] [--actions NAMES]
 ```
 
 Shared emit flags: `-f` framework (required), `-c` concerns, `-o` overlay, `--out` directory.
@@ -110,8 +112,8 @@ Hermes routing is required. Prefer one group per turn unless the user clearly ne
 
 Prove the skill loaded and the chosen command worked:
 
-1. `terminal(command="python3 ${HERMES_SKILL_DIR}/scripts/orchestra.py check")` prints `CHECK OK`.
-2. `terminal(command="python3 ${HERMES_SKILL_DIR}/scripts/integrity_check.py")` prints `INTEGRITY OK`.
+1. `terminal(command='python3 "${HERMES_SKILL_DIR}/scripts/orchestra.py" check')` prints `CHECK OK`.
+2. `terminal(command='python3 "${HERMES_SKILL_DIR}/scripts/integrity_check.py"')` prints `INTEGRITY OK`.
 3. After **emit** `structure`, stdout includes `"status": "CLEAN"` and `--out` contains the diagram trio when `--out` was set.
 4. After **repo** `analyze --out`, `analysis.json` exists and stderr includes `# metrics:`.
 5. After **repo** `optimize` without `--confirm`, the tree is unchanged and a plan is printed or written.
@@ -119,7 +121,26 @@ Prove the skill loaded and the chosen command worked:
 Operator install (not the agent loop):
 
 ```text
-terminal(command="bash ${HERMES_SKILL_DIR}/install.sh --dry-run")
+terminal(command='bash install.sh --dry-run') # workdir = reviewed source checkout
 ```
 
-Then `bash install.sh` to `~/.hermes/skills/orchestra`.
+Then `bash install.sh` to `${HERMES_HOME:-$HOME/.hermes}/skills/orchestra`.
+
+After an approved `optimize --apply --confirm`, inspect the changed paths and
+run the target project's import/build checks and existing tests from its root,
+plus a fresh analyze on the renamed tree. Record exit statuses and compare
+behavior before/after; a plan, tree listing, or refreshed diagram is not proof
+imports still work. Use `python3 -m unittest discover -s tests` for Orchestra's
+own fixture tests, not as a substitute for the target project's test suite.
+
+Installer upgrades stage and check on the target filesystem, retain unique
+backups keyed to the exact resolved target, then rename and check the final path.
+`bash install.sh --target DIR --rollback` restores only that target's verified
+backup. Concurrent installers fail on a per-target advisory lock. There is a
+brief absent-target window between renames: this is not crash-atomic or an
+uninterrupted replacement. On process death, preserve `.orchestra-previous-*`
+and backups for operator recovery; never blindly delete them. Run only in
+trusted user-owned directories (advisory locks do not stop hostile filesystem
+writers). Do not run this installer from inside the destination package.
+
+Skill source selection, migration and safe checks: [SKILL_PROVENANCE.md](SKILL_PROVENANCE.md).

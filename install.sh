@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Abraxas Orchestra — atomic installer (v0.8.1)
+# Abraxas Orchestra — staged, checked installer (v0.8.1)
 # Default: ~/.hermes/skills/orchestra
 # Supports --dry-run, --rollback, --target DIR, --allow-outside-home
 
@@ -7,8 +7,9 @@ set -euo pipefail
 
 VERSION="0.8.1"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DEFAULT_TARGET="${HOME}/.hermes/skills/orchestra"
-BACKUP_ROOT="${HOME}/.hermes/receipts/orchestra-backups"
+HERMES_ROOT="${HERMES_HOME:-${HOME}/.hermes}"
+DEFAULT_TARGET="${HERMES_ROOT}/skills/orchestra"
+BACKUP_ROOT="${HERMES_ROOT}/receipts/orchestra-backups"
 
 DRY_RUN=0
 ROLLBACK=0
@@ -63,7 +64,7 @@ resolve_path() {
   if [[ "$p" != /* ]]; then
     p="$(pwd)/$p"
   fi
-  python3 -c 'import os,sys; print(os.path.abspath(sys.argv[1]))' "$p"
+  python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$p"
 }
 
 is_forbidden_prefix() {
@@ -80,11 +81,12 @@ is_forbidden_prefix() {
 
 validate_target() {
   local resolved home_resolved
+  [[ ! -L "$TARGET" ]] || die "refusing symlink target"
   resolved="$(resolve_path "$TARGET")"
   TARGET="$resolved"
 
-  if [[ "$TARGET" == "$SCRIPT_DIR" || "$TARGET" == "$SCRIPT_DIR"/* ]]; then
-    warn "target is inside source tree: ${TARGET}"
+  if [[ "$TARGET" == "$SCRIPT_DIR" || "$TARGET" == "$SCRIPT_DIR"/* || "$SCRIPT_DIR" == "$TARGET"/* ]]; then
+    die "source and target must not overlap: ${TARGET}"
   fi
 
   if [[ "$TARGET" == "/" ]]; then
@@ -102,7 +104,7 @@ validate_target() {
     if is_forbidden_prefix "$TARGET"; then
       die "refusing system path target: ${TARGET}"
     fi
-    if [[ $ALLOW_OUTSIDE_HOME -ne 1 ]]; then
+    if [[ $ALLOW_OUTSIDE_HOME -ne 1 && "$TARGET" != "$(resolve_path "$HERMES_ROOT")"/skills/* ]]; then
       die "target is outside \$HOME (${TARGET}). Re-run with --allow-outside-home if intentional."
     fi
     warn "installing outside \$HOME: ${TARGET}"
@@ -154,81 +156,24 @@ validate_source() {
     [[ -f "${SCRIPT_DIR}/${f}" ]] || die "missing framework reference: ${f}"
   done
 
-  if ! python3 "${SCRIPT_DIR}/scripts/orchestra.py" check >/dev/null 2>&1; then
-    python3 -c "import ast, pathlib; ast.parse(pathlib.Path('${SCRIPT_DIR}/scripts/orchestra.py').read_text())" \
-      || die "scripts/orchestra.py failed syntax check"
-  fi
+  PYTHONDONTWRITEBYTECODE=1 python3 "${SCRIPT_DIR}/scripts/orchestra.py" check || die "runtime check failed"
+  PYTHONDONTWRITEBYTECODE=1 python3 "${SCRIPT_DIR}/scripts/integrity_check.py" || die "integrity check failed"
   log "Source validation OK"
 }
 
 do_rollback() {
   validate_target
-  local latest
-  latest="$(ls -1dt "${BACKUP_ROOT}"/*/ 2>/dev/null | head -1 || true)"
-  [[ -n "$latest" ]] || die "no backups found under ${BACKUP_ROOT}"
-  log "Rolling back from ${latest}"
-  if [[ $DRY_RUN -eq 1 ]]; then
-    printf '[dry-run] rm -rf %q && mkdir -p %q && cp -a %q %q\n' \
-      "$TARGET" "$(dirname "$TARGET")" "$latest" "$TARGET"
-  else
-    rm -rf "$TARGET"
-    mkdir -p "$(dirname "$TARGET")"
-    cp -a "$latest" "$TARGET"
-  fi
-  log "Rollback complete"
+  local args=(--target "$TARGET" --backup-root "$BACKUP_ROOT" --rollback)
+  [[ $DRY_RUN -eq 0 ]] || args+=(--dry-run)
+  python3 "${SCRIPT_DIR}/scripts/install_package.py" "${args[@]}"
 }
 
-backup_existing() {
-  if [[ ! -d "$TARGET" ]]; then
-    return 0
-  fi
-  local stamp dest
-  stamp="$(date -u +%Y%m%dT%H%M%SZ)"
-  dest="${BACKUP_ROOT}/${stamp}"
-  log "Backing up existing install to ${dest}"
-  run_cmd mkdir -p "${BACKUP_ROOT}"
-  run_cmd cp -a "${TARGET}" "${dest}"
-}
+backup_existing() { :; } # Transaction helper backs up after staged validation.
 
 atomic_install() {
-  local staging
-  staging="$(mktemp -d "${TMPDIR:-/tmp}/orchestra-install.XXXXXX")"
-  trap 'rm -rf "$staging"' EXIT
-
-  log "Staging into ${staging}"
-
-  run_cmd cp -a "${SCRIPT_DIR}/SKILL.md" "${staging}/"
-  run_cmd cp -a "${SCRIPT_DIR}/orchestra.manifest.yaml" "${staging}/"
-  run_cmd cp -a "${SCRIPT_DIR}/VERSION" "${staging}/"
-  run_cmd cp -a "${SCRIPT_DIR}/README.md" "${staging}/" 2>/dev/null || true
-  run_cmd cp -a "${SCRIPT_DIR}/CHANGELOG.md" "${staging}/" 2>/dev/null || true
-  run_cmd cp -a "${SCRIPT_DIR}/LICENSE" "${staging}/" 2>/dev/null || true
-  run_cmd cp -a "${SCRIPT_DIR}/NOTICE" "${staging}/" 2>/dev/null || true
-  run_cmd cp -a "${SCRIPT_DIR}/scripts" "${staging}/"
-  run_cmd cp -a "${SCRIPT_DIR}/references" "${staging}/"
-  run_cmd cp -a "${SCRIPT_DIR}/schemas" "${staging}/"
-  run_cmd cp -a "${SCRIPT_DIR}/docs" "${staging}/" 2>/dev/null || true
-  run_cmd cp -a "${SCRIPT_DIR}/examples" "${staging}/" 2>/dev/null || true
-  run_cmd cp -a "${SCRIPT_DIR}/assets" "${staging}/" 2>/dev/null || true
-  run_cmd cp -a "${SCRIPT_DIR}/tests" "${staging}/" 2>/dev/null || true
-  run_cmd cp -a "${SCRIPT_DIR}/install.sh" "${staging}/" 2>/dev/null || true
-
-  run_cmd chmod +x "${staging}/scripts/orchestra.py"
-  run_cmd chmod +x "${staging}/scripts/smoke.sh" 2>/dev/null || true
-  run_cmd chmod +x "${staging}/install.sh" 2>/dev/null || true
-
-  log "Activating at ${TARGET}"
-  if [[ $DRY_RUN -eq 1 ]]; then
-    printf '[dry-run] mkdir -p %q && rm -rf %q && mv %q %q\n' \
-      "$(dirname "$TARGET")" "$TARGET" "$staging" "$TARGET"
-    rm -rf "$staging"
-    trap - EXIT
-  else
-    mkdir -p "$(dirname "$TARGET")"
-    rm -rf "$TARGET"
-    mv "$staging" "$TARGET"
-    trap - EXIT
-  fi
+  local args=(--target "$TARGET" --backup-root "$BACKUP_ROOT")
+  [[ $DRY_RUN -eq 0 ]] || args+=(--dry-run)
+  python3 "${SCRIPT_DIR}/scripts/install_package.py" "${args[@]}"
 }
 
 if [[ $ROLLBACK -eq 1 ]]; then
