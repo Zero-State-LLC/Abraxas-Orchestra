@@ -80,8 +80,14 @@ is_forbidden_prefix() {
 }
 
 validate_target() {
-  local resolved home_resolved
-  [[ ! -L "$TARGET" ]] || die "refusing symlink target"
+  local resolved home_resolved original_target="$TARGET"
+  PYTHONDONTWRITEBYTECODE=1 python3 -c '
+import sys
+sys.path.insert(0, sys.argv[1])
+from install_package import reject_symlinks
+for path in sys.argv[2:]:
+    reject_symlinks(path)
+' "$SCRIPT_DIR/scripts" "$TARGET" "$BACKUP_ROOT"
   resolved="$(resolve_path "$TARGET")"
   TARGET="$resolved"
 
@@ -111,6 +117,8 @@ validate_target() {
   fi
 
   [[ -n "$TARGET" ]] || die "empty target"
+  # Preserve lexical input so the helper can repeat validation under its lock.
+  TARGET="$original_target"
 }
 
 run_cmd() {
