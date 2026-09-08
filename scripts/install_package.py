@@ -1,0 +1,133 @@
+"""Same-filesystem staged installation with target-keyed rollback backups."""
+import argparse
+import fcntl
+import os
+import hashlib
+import json
+from pathlib import Path
+import shutil
+import stat
+import subprocess
+import sys
+import tempfile
+import uuid
+
+ROOT = Path(__file__).resolve().parents[1]
+FILES = ("SKILL.md", "orchestra.manifest.yaml", "VERSION", "README.md", "CHANGELOG.md",
+         "LICENSE", "NOTICE", "scripts", "references", "schemas", "docs", "examples",
+         "assets", "tests", "install.sh")
+
+
+def check(path):
+    for script, args in (("orchestra.py", ["check"]), ("integrity_check.py", [])):
+        subprocess.run([sys.executable, str(path / "scripts" / script), *args],
+                       check=True, cwd=path)
+
+
+def activate(stage, target):
+    previous = target.parent / (".orchestra-previous-" + uuid.uuid4().hex)
+    if target.is_symlink():
+        raise ValueError("target changed to a symlink")
+    had_previous = target.exists()
+    if had_previous:
+        target.rename(previous)
+    try:
+        stage.rename(target)
+        check(target)
+    except BaseException:
+        if target.exists():
+            shutil.rmtree(target)
+        if had_previous:
+            previous.rename(target)
+        raise
+    if had_previous:
+        shutil.rmtree(previous)
+
+
+def reject_symlinks(path):
+    """Check lexical components before resolve can hide a redirect (including /../)."""
+    path = Path(path).expanduser()
+    if not path.is_absolute():
+        path = Path.cwd() / path
+    for component in (*reversed(path.parents), path):
+        try:
+            mode = component.lstat().st_mode
+        except FileNotFoundError:
+            continue
+        if stat.S_ISLNK(mode):
+            raise ValueError(f"refusing symlink path component: {component}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--target", type=Path, required=True)
+    parser.add_argument("--backup-root", type=Path, required=True)
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--rollback", action="store_true")
+    args = parser.parse_args()
+    reject_symlinks(args.target)
+    reject_symlinks(args.backup_root)
+    target = args.target.expanduser().resolve()
+    if target == ROOT or target in ROOT.parents or ROOT in target.parents:
+        parser.error("source and target must not overlap")
+    if args.target.is_symlink() or (target.exists() and not target.is_dir()):
+        parser.error("target must be a directory, not a symlink or file")
+    backups = args.backup_root.resolve() / hashlib.sha256(str(target).encode()).hexdigest()
+    if target == backups or target in backups.parents or backups in target.parents:
+        parser.error("backup and target must not overlap")
+    lock_fd = None
+    try:
+        if not args.dry_run:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            # Stable inode outside the replaced directory; never unlink it.
+            lock_path = target.parent / ("." + target.name + ".install.lock")
+            lock_fd = os.open(lock_path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+            try:
+                fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                parser.error("another installer holds this target lock")
+            reject_symlinks(args.target)
+            reject_symlinks(args.backup_root)
+            reject_symlinks(backups)
+        source = ROOT
+        if args.rollback:
+            candidates = sorted(backups.glob("*/package"), key=lambda p: p.parent.name)
+            if not candidates:
+                parser.error("no backups for this exact target")
+            source = candidates[-1]
+            receipt = json.loads((source.parent / "target.json").read_text())
+            if receipt["target"] != str(target):
+                parser.error("backup target mismatch")
+        print(f"{'Rollback' if args.rollback else 'Install'} {source} -> {target}")
+        if args.dry_run:
+            return
+        with tempfile.TemporaryDirectory(prefix=".orchestra-stage-", dir=target.parent) as tmp:
+            stage = Path(tmp) / "package"
+            if args.rollback:
+                shutil.copytree(source, stage)
+            else:
+                stage.mkdir()
+                for name in FILES:
+                    item = source / name
+                    if item.is_dir():
+                        shutil.copytree(item, stage / name, ignore=shutil.ignore_patterns("__pycache__"))
+                    elif item.is_file():
+                        shutil.copy2(item, stage / name)
+            check(stage)
+            reject_symlinks(args.target)
+            reject_symlinks(backups)
+            if target.exists():
+                from datetime import datetime, timezone
+                backup = backups / (datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ") + "-" + uuid.uuid4().hex)
+                backup.mkdir(parents=True)
+                shutil.copytree(target, backup / "package")
+                (backup / "target.json").write_text(json.dumps({"target": str(target)}))
+            activate(stage, target)
+        print("Verified activation complete")
+    finally:
+        if lock_fd is not None:
+            os.close(lock_fd)
+
+
+if __name__ == "__main__":
+    main()
