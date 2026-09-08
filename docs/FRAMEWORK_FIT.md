@@ -2,7 +2,7 @@
 
 When to pick which map for `structure` / `project` / `analyze -f`, and how to read strength scores.
 
-Live threat model: [`SECURITY.md`](SECURITY.md) · CLI surface: [`DESIGN.md`](DESIGN.md)
+Live threat model: `docs/SECURITY.md` · CLI surface: `docs/DESIGN.md`
 
 ## Strength labels (fail-closed)
 
